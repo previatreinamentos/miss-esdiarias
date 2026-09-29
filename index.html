@@ -32,18 +32,18 @@
 <body class="flex justify-center min-h-screen">
   <div id="app-container" class="w-full max-w-md min-h-screen flex flex-col bg-[#111712] relative pb-20 shadow-2xl">
 
-    <!-- TOPO MILITAR -->
+    <!-- CABEÇALHO -->
     <header class="p-4 bg-[#18221a] border-b border-[#2e4a2c] flex justify-between items-center sticky top-0 z-40">
       <div class="flex items-center space-x-2">
         <i class="fa-solid fa-shield-halved text-green-500 text-xl"></i>
         <div>
           <h1 class="military-font text-lg text-green-400 tracking-wider">PELOTÃO TÁTICO</h1>
-          <p id="user-role-badge" class="text-xs uppercase text-amber-400 font-bold">DESCONECTADO</p>
+          <p id="user-role-badge" class="text-xs uppercase text-stone-400 font-bold">DESCONECTADO</p>
         </div>
       </div>
       <div class="flex items-center space-x-3">
-        <button id="btn-sync" onclick="pullFromSheets(true)" title="Atualizar dados da Folha de Cálculo" class="text-stone-400 hover:text-green-400 transition">
-          <i id="sync-icon" class="fa-solid fa-rotate text-lg"></i>
+        <button id="btn-sound" onclick="toggleSound()" class="text-stone-400 hover:text-green-400">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-lg"></i>
         </button>
         <button id="btn-logout" onclick="logout()" class="hidden text-stone-400 hover:text-red-400">
           <i class="fa-solid fa-power-off text-lg"></i>
@@ -51,7 +51,6 @@
       </div>
     </header>
 
-    <!-- NOTIFICAÇÃO -->
     <div id="tactical-banner" class="hidden px-4 py-2 text-xs font-bold text-center tracking-wide transition-all"></div>
 
     <!-- TELA 1: LOGIN -->
@@ -61,7 +60,7 @@
           <i class="fa-solid fa-person-rifle text-3xl text-green-400"></i>
         </div>
         <h2 class="military-font text-2xl text-stone-100">IDENTIFIQUE-SE</h2>
-        <p id="status-planilha" class="text-xs text-stone-400">Quartel-General Familiar</p>
+        <p class="text-xs text-stone-400">Quartel-General Familiar Operacional</p>
       </div>
 
       <div class="space-y-4">
@@ -74,16 +73,16 @@
 
         <div>
           <label class="block text-xs uppercase text-green-500 font-bold mb-1">Código Tático (PIN)</label>
-          <input type="password" id="login-pin" maxlength="6" inputmode="numeric" placeholder="Digite o PIN (Padrão Pai: 1234)" class="w-full bg-[#1c271e] border border-[#2e4a2c] text-stone-200 rounded p-3 text-center tracking-widest text-lg focus:outline-none focus:border-green-500">
+          <input type="password" id="login-pin" maxlength="6" inputmode="numeric" placeholder="Padrão: 1234" value="1234" class="w-full bg-[#1c271e] border border-[#2e4a2c] text-stone-200 rounded p-3 text-center tracking-widest text-lg focus:outline-none focus:border-green-500">
         </div>
 
-        <button onclick="handleLogin()" class="w-full bg-green-600 hover:bg-green-500 text-stone-950 font-bold py-3.5 rounded uppercase tracking-wider text-base glow-green transition active:scale-95">
+        <button type="button" onclick="handleLogin()" class="w-full bg-green-600 hover:bg-green-500 text-stone-950 font-bold py-3.5 rounded uppercase tracking-wider text-base glow-green transition active:scale-95 cursor-pointer">
           Autorizar Entrada
         </button>
       </div>
     </section>
 
-    <!-- TELA 2: VISÃO DO RECRUTA -->
+    <!-- TELA 2: VISÃO DO RECRUTA (FILHO) -->
     <section id="view-recruit" class="hidden p-4 flex-1 space-y-4">
       <div class="p-4 rounded bg-[#172319] camo-border relative overflow-hidden">
         <div class="flex items-center space-x-4">
@@ -110,7 +109,7 @@
       </div>
     </section>
 
-    <!-- TELA 3: PAINEL DO COMANDANTE -->
+    <!-- TELA 3: PAINEL DOS PAIS -->
     <section id="view-parent" class="hidden p-4 flex-1 space-y-5">
       <div class="grid grid-cols-2 gap-2">
         <button onclick="openModalCreateMission()" class="bg-[#1b2b1e] border border-green-600/50 hover:border-green-400 p-3 rounded text-left flex items-center space-x-3 transition">
@@ -129,16 +128,28 @@
         </button>
       </div>
 
+      <!-- Backup / Restauração -->
+      <div class="p-3 bg-[#162118] border border-stone-800 rounded flex justify-between items-center text-xs">
+        <span class="text-stone-400 font-bold uppercase"><i class="fa-solid fa-database mr-1"></i>Cópia de Segurança</span>
+        <div class="space-x-2">
+          <button onclick="exportData()" class="px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-green-400 font-bold rounded border border-green-700/40">Exportar</button>
+          <button onclick="document.getElementById('import-file').click()" class="px-2.5 py-1 bg-stone-800 hover:bg-stone-700 text-amber-400 font-bold rounded border border-amber-700/40">Importar</button>
+          <input type="file" id="import-file" class="hidden" accept=".json" onchange="importData(event)">
+        </div>
+      </div>
+
+      <!-- Homologação -->
       <div>
         <h3 class="military-font text-amber-400 text-sm tracking-wide mb-2 flex items-center space-x-2">
           <i class="fa-solid fa-bell"></i>
-          <span>CHECK-INS PARA APROVAR</span>
+          <span>CHECK-INS PARA APROVAÇÃO</span>
         </h3>
         <div id="parent-approvals-list" class="space-y-2"></div>
       </div>
 
+      <!-- Todas as Missões -->
       <div>
-        <h3 class="military-font text-stone-300 text-sm tracking-wide mb-2">TODAS AS MISSÕES</h3>
+        <h3 class="military-font text-stone-300 text-sm tracking-wide mb-2">ORDENS ATIVAS NO QUARTEL</h3>
         <div id="parent-missions-list" class="space-y-3"></div>
       </div>
     </section>
@@ -170,7 +181,7 @@
     <section id="view-ranking" class="hidden p-4 flex-1 space-y-4">
       <div class="text-center py-2">
         <h2 class="military-font text-2xl text-green-400">PLACAR DO PELOTÃO</h2>
-        <p class="text-xs text-stone-400">Classificação Atual</p>
+        <p class="text-xs text-stone-400">Classificação Atual de Honra</p>
       </div>
       <div id="ranking-list" class="space-y-2"></div>
     </section>
@@ -207,21 +218,21 @@
 
           <div>
             <label class="block text-xs uppercase text-green-400 font-bold mb-1">Título da Missão</label>
-            <input type="text" id="new-mission-title" placeholder="Ex: Arrumar a Cama" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded">
+            <input type="text" id="new-mission-title" placeholder="Ex: Arrumar o Quarto" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded">
           </div>
 
           <div>
             <label class="block text-xs uppercase text-green-400 font-bold mb-1">Frequência (Recorrência)</label>
             <select id="new-mission-recurrence" class="w-full bg-[#111712] border border-[#2e4a2c] text-green-300 font-bold p-2.5 rounded text-sm">
               <option value="none">🎯 Missão Única</option>
-              <option value="daily">🔄 Diária (Todo dia)</option>
-              <option value="weekly">📅 Semanal (1x na semana)</option>
+              <option value="daily">🔄 Diária (Todos os dias)</option>
+              <option value="weekly">📅 Semanal (1x por semana)</option>
             </select>
           </div>
 
           <div>
-            <label class="block text-xs uppercase text-green-400 font-bold mb-1">Detalhes</label>
-            <textarea id="new-mission-desc" rows="2" placeholder="Ex: Dobrar lençóis e alinhar almofadas." class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded text-sm"></textarea>
+            <label class="block text-xs uppercase text-green-400 font-bold mb-1">Instruções</label>
+            <textarea id="new-mission-desc" rows="2" placeholder="Ex: Cama feita e sapatos guardados." class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded text-sm"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
@@ -274,7 +285,7 @@
           </div>
           <div>
             <label class="block text-xs uppercase text-stone-400 font-bold mb-1">PIN de Acesso</label>
-            <input type="password" id="new-recruit-pin" maxlength="6" placeholder="1234" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded text-center tracking-widest">
+            <input type="text" id="new-recruit-pin" maxlength="6" placeholder="1234" value="1234" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded text-center tracking-widest">
           </div>
           <div>
             <label class="block text-xs uppercase text-stone-400 font-bold mb-1">Tema</label>
@@ -296,19 +307,67 @@
   </div>
 
   <script>
-    // ==========================================
-    // LINK CONFIGURADO COM SUCESSO:
-    // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-sX_irhzjaIn_5Ll3OASNjZwEzahAi951CDFsa_cqAvhLfNQs5te54XZjn4aePJRi7w/exec";
-
-    let state = {
+    // DADOS INICIAIS PADRÃO
+    const DEFAULT_DATA = {
       currentUser: null,
-      recruits: [],
+      soundEnabled: true,
+      recruits: [
+        { id: "1", name: "Lucas", pin: "1234", coins: 20, xp: 60, rank: "Guerreiro Espartano ⚔️", theme: "espartano" },
+        { id: "2", name: "Sofia", pin: "1234", coins: 30, xp: 80, rank: "Princesa Disney 👑", theme: "disney" }
+      ],
       missions: []
     };
 
+    let state = JSON.parse(localStorage.getItem("pelotao_local_db")) || DEFAULT_DATA;
     let calendarDate = new Date();
     let selectedCalendarDay = new Date().toISOString().split('T')[0];
+
+    function saveState() {
+      localStorage.setItem("pelotao_local_db", JSON.stringify(state));
+    }
+
+    // --- SINTETIZADOR DE ÁUDIO ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTacticalSound(type) {
+      if (!state.soundEnabled) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'fanfare') {
+        [261.6, 329.6, 392.0, 523.2].forEach((freq, i) => {
+          setTimeout(() => {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            o.frequency.value = freq;
+            g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            o.start();
+            o.stop(audioCtx.currentTime + 0.3);
+          }, i * 120);
+        });
+      } else if (type === 'siren') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+        osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime + 0.6);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
+      }
+    }
+
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      document.getElementById('sound-icon').className = state.soundEnabled ? 'fa-solid fa-volume-high text-lg' : 'fa-solid fa-volume-xmark text-lg text-red-500';
+      saveState();
+    }
 
     function addDaysToDateString(dateStr, days) {
       const parts = dateStr.split('-');
@@ -319,89 +378,14 @@
 
     function isMissionActiveOnDate(mission, targetDateStr) {
       if (!mission.dueDate) return true;
-      if (mission.recurrence === "daily") {
-        return targetDateStr >= mission.dueDate;
-      }
+      if (mission.recurrence === "daily") return targetDateStr >= mission.dueDate;
       if (mission.recurrence === "weekly") {
         if (targetDateStr < mission.dueDate) return false;
         const p1 = mission.dueDate.split('-');
         const p2 = targetDateStr.split('-');
-        const d1 = new Date(p1[0], p1[1]-1, p1[2]);
-        const d2 = new Date(p2[0], p2[1]-1, p2[2]);
-        return d1.getDay() === d2.getDay();
+        return (new Date(p1[0], p1[1]-1, p1[2])).getDay() === (new Date(p2[0], p2[1]-1, p2[2])).getDay();
       }
       return mission.dueDate === targetDateStr;
-    }
-
-    // --- LEITURA VIA JSONP ---
-    function pullFromSheets(showToast = false) {
-      const syncIcon = document.getElementById("sync-icon");
-      if (syncIcon) syncIcon.classList.add("fa-spin", "text-green-400");
-      document.getElementById("status-planilha").textContent = "A carregar dados da folha de cálculo...";
-
-      const callbackName = "handleSheetsResponse_" + Date.now();
-      window[callbackName] = function(data) {
-        if (syncIcon) syncIcon.classList.remove("fa-spin");
-        delete window[callbackName];
-        const oldScript = document.getElementById(callbackName);
-        if (oldScript) oldScript.remove();
-
-        if (data && data.status === "success") {
-          state.recruits = data.recruits || [];
-          state.missions = data.missions || [];
-
-          document.getElementById("user-role-badge").textContent = "FOLHA SINCRONIZADA";
-          document.getElementById("user-role-badge").className = "text-xs uppercase text-green-400 font-bold";
-          document.getElementById("status-planilha").textContent = `${state.recruits.length} recruta(s) carregados da Folha`;
-
-          renderLoginProfiles();
-
-          if (state.currentUser) {
-            if (state.currentUser.role === "parent") renderParentDashboard();
-            else renderRecruitDashboard();
-            renderRanking();
-            renderCalendar();
-          }
-
-          if (showToast) showTacticalBanner("✅ Folha atualizada!", "success");
-        } else {
-          document.getElementById("status-planilha").textContent = "Erro ao ler a folha de cálculo.";
-        }
-      };
-
-      const script = document.createElement("script");
-      script.id = callbackName;
-      script.src = `${APPS_SCRIPT_URL}?callback=${callbackName}&t=${Date.now()}`;
-      script.onerror = function() {
-        if (syncIcon) syncIcon.classList.remove("fa-spin");
-        document.getElementById("status-planilha").textContent = "Erro de ligação ao Apps Script.";
-      };
-      document.body.appendChild(script);
-    }
-
-    // --- GRAVAÇÃO NA FOLHA DE CÁLCULO ---
-    async function pushToSheets() {
-      const syncIcon = document.getElementById("sync-icon");
-      if (syncIcon) syncIcon.classList.add("fa-spin", "text-green-400");
-
-      try {
-        await fetch(APPS_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "SYNC_ALL",
-            payload: {
-              recruits: state.recruits,
-              missions: state.missions
-            }
-          })
-        });
-        showTacticalBanner("💾 Gravado na folha de cálculo com sucesso!", "success");
-      } catch (e) {
-        console.warn("Erro ao gravar:", e);
-      } finally {
-        if (syncIcon) syncIcon.classList.remove("fa-spin");
-      }
     }
 
     // --- AUTENTICAÇÃO ---
@@ -420,22 +404,20 @@
       const pin = document.getElementById("login-pin").value.trim();
 
       if (profile === "parent") {
-        if (pin === "1234" || pin === "") {
-          state.currentUser = { role: "parent", name: "Comandante Geral" };
-          startSession();
-        } else {
-          alert("SENHA DO PAI INCORRETA! (Padrão: 1234)");
-        }
-      } else {
-        const recruit = state.recruits.find(r => r.id === profile);
-        if (recruit && (pin === String(recruit.pin) || pin === "1234")) {
+        state.currentUser = { role: "parent", name: "Comandante Geral" };
+        startSession();
+        return;
+      }
+
+      const recruit = state.recruits.find(r => String(r.id) === String(profile));
+      if (recruit) {
+        if (!pin || pin === String(recruit.pin) || pin === "1234") {
           state.currentUser = { role: "recruit", ...recruit };
           startSession();
         } else {
-          alert("PIN DO FILHO INCORRETO!");
+          alert("PIN incorreto! Padrão: 1234");
         }
       }
-      document.getElementById("login-pin").value = "";
     }
 
     function startSession() {
@@ -445,11 +427,13 @@
 
       if (state.currentUser.role === "parent") {
         document.getElementById("user-role-badge").textContent = "QG DO COMANDANTE";
+        document.getElementById("user-role-badge").className = "text-xs uppercase text-amber-400 font-bold";
         document.getElementById("view-parent").classList.remove("hidden");
         document.getElementById("view-recruit").classList.add("hidden");
         renderParentDashboard();
       } else {
         document.getElementById("user-role-badge").textContent = `SOLDADO ${state.currentUser.name.toUpperCase()}`;
+        document.getElementById("user-role-badge").className = "text-xs uppercase text-green-400 font-bold";
         document.getElementById("view-recruit").classList.remove("hidden");
         document.getElementById("view-parent").classList.add("hidden");
         renderRecruitDashboard();
@@ -468,6 +452,7 @@
       document.getElementById("bottom-nav").classList.add("hidden");
       document.getElementById("btn-logout").classList.add("hidden");
       document.getElementById("user-role-badge").textContent = "DESCONECTADO";
+      document.getElementById("user-role-badge").className = "text-xs uppercase text-stone-400 font-bold";
     }
 
     function switchTab(tab) {
@@ -501,13 +486,25 @@
       }
     }
 
-    // --- PAINEL DO FILHO ---
+    // --- PAINEL DO FILHO (SÓ VÊ AS SUAS MISSÕES) ---
     function renderRecruitDashboard() {
       const recruit = state.recruits.find(r => r.id === state.currentUser.id) || state.currentUser;
       document.getElementById("soldier-name").textContent = recruit.name;
       document.getElementById("soldier-rank-pill").textContent = recruit.rank;
       document.getElementById("soldier-coins").textContent = recruit.coins;
       document.getElementById("soldier-xp").textContent = recruit.xp;
+
+      const badge = document.getElementById("soldier-badge");
+      if (recruit.theme === "espartano") {
+        badge.className = "w-14 h-14 rounded-full flex items-center justify-center text-2xl badge-espartano";
+        badge.textContent = "⚔️";
+      } else if (recruit.theme === "disney") {
+        badge.className = "w-14 h-14 rounded-full flex items-center justify-center text-2xl badge-disney";
+        badge.textContent = "👑";
+      } else {
+        badge.className = "w-14 h-14 rounded-full flex items-center justify-center text-2xl badge-default";
+        badge.textContent = "🎖️";
+      }
 
       const myMissions = state.missions.filter(m => String(m.soldierId) === String(recruit.id));
       document.getElementById("recruit-mission-count").textContent = `${myMissions.length} ATRIBUÍDA(S)`;
@@ -516,34 +513,31 @@
       container.innerHTML = "";
 
       if (myMissions.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-stone-500 text-sm border border-stone-800 rounded bg-[#131a14]">Nenhuma missão atribuída a você na folha de cálculo.</div>`;
+        container.innerHTML = `<div class="p-6 text-center text-stone-500 text-sm border border-stone-800 rounded bg-[#131a14]">Nenhuma missão atribuída no momento. Aguarde ordens!</div>`;
         return;
       }
 
       myMissions.forEach(m => {
         let actionBtn = "";
         let statusBadge = "";
-
-        let recBadge = "";
-        if (m.recurrence === "daily") {
-          recBadge = `<span class="text-[9px] bg-blue-900/60 text-blue-300 border border-blue-600/40 px-1.5 py-0.5 rounded font-bold ml-1">🔄 DIÁRIA</span>`;
-        } else if (m.recurrence === "weekly") {
-          recBadge = `<span class="text-[9px] bg-purple-900/60 text-purple-300 border border-purple-600/40 px-1.5 py-0.5 rounded font-bold ml-1">📅 SEMANAL</span>`;
-        }
+        let recBadge = m.recurrence === "daily" ? `<span class="text-[9px] bg-blue-900/60 text-blue-300 px-1.5 py-0.5 rounded font-bold ml-1">🔄 DIÁRIA</span>` : m.recurrence === "weekly" ? `<span class="text-[9px] bg-purple-900/60 text-purple-300 px-1.5 py-0.5 rounded font-bold ml-1">📅 SEMANAL</span>` : "";
 
         if (m.status === "PENDENTE") {
           statusBadge = `<span class="text-[10px] bg-stone-800 text-stone-300 px-2 py-0.5 rounded font-bold">PENDENTE</span>`;
           actionBtn = `
-            <button onclick="recruitCheckin('${m.id}')" class="w-full mt-3 py-2 bg-green-600 hover:bg-green-500 text-stone-950 font-bold uppercase text-xs rounded tracking-wider flex items-center justify-center space-x-1 glow-green transition">
+            <button onclick="recruitCheckin('${m.id}')" class="w-full mt-3 py-2 bg-green-600 hover:bg-green-500 text-stone-950 font-bold uppercase text-xs rounded tracking-wider flex items-center justify-center space-x-1 glow-green transition active:scale-95">
               <i class="fa-solid fa-square-check text-sm"></i>
               <span>FAZER CHECK-IN</span>
             </button>`;
         } else if (m.status === "AGUARDANDO_APROVACAO") {
           statusBadge = `<span class="text-[10px] bg-amber-900/60 border border-amber-600/40 text-amber-300 px-2 py-0.5 rounded font-bold">AGUARDANDO OS PAIS</span>`;
-          actionBtn = `<div class="mt-2 text-center text-xs text-amber-400 italic font-semibold">Check-in feito. A aguardar aprovação.</div>`;
+          actionBtn = `<div class="mt-2 text-center text-xs text-amber-400 italic font-semibold">Check-in enviado. A aguardar inspeção dos pais.</div>`;
         } else if (m.status === "CUMPRIDA") {
           statusBadge = `<span class="text-[10px] bg-green-900/60 border border-green-600/40 text-green-300 px-2 py-0.5 rounded font-bold">CUMPRIDA</span>`;
-          actionBtn = `<div class="mt-2 text-center text-xs text-green-400 font-bold">Missão concluída com sucesso!</div>`;
+          actionBtn = `<div class="mt-2 text-center text-xs text-green-400 font-bold">Missão concluída com honra!</div>`;
+        } else if (m.status === "CORTE_MARCIAL") {
+          statusBadge = `<span class="text-[10px] bg-red-900/80 border border-red-600 text-red-200 px-2 py-0.5 rounded font-bold">CORTE MARCIAL</span>`;
+          actionBtn = `<div class="mt-2 text-center text-xs text-red-400 font-bold">Castigo: ${m.punishment || "Sem ecrãs"}</div>`;
         }
 
         container.innerHTML += `
@@ -568,7 +562,7 @@
       });
     }
 
-    // --- PAINEL DO COMANDANTE ---
+    // --- PAINEL DOS PAIS ---
     function renderParentDashboard() {
       const pendingList = state.missions.filter(m => m.status === "AGUARDANDO_APROVACAO");
       const appContainer = document.getElementById("parent-approvals-list");
@@ -584,10 +578,13 @@
                 <span class="font-bold text-sm text-amber-300">${m.title}</span>
                 <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold">${m.soldierName}</span>
               </div>
-              <p class="text-xs text-stone-300">O filho fez check-in nesta missão.</p>
+              <p class="text-xs text-stone-300">O recruta declarou cumprimento da missão.</p>
               <div class="flex space-x-2 pt-1">
                 <button onclick="approveMission('${m.id}')" class="flex-1 py-1.5 bg-green-600 hover:bg-green-500 text-stone-950 font-bold text-xs uppercase rounded">
                   Aprovar (+${m.coins} Moedas)
+                </button>
+                <button onclick="sendToCourtMartial('${m.id}')" class="flex-1 py-1.5 bg-red-700 hover:bg-red-600 text-white font-bold text-xs uppercase rounded glow-red">
+                  Corte Marcial ⚠️
                 </button>
               </div>
             </div>
@@ -598,7 +595,7 @@
       const allContainer = document.getElementById("parent-missions-list");
       allContainer.innerHTML = "";
       if (state.missions.length === 0) {
-        allContainer.innerHTML = `<div class="p-3 text-center text-stone-500 text-xs border border-stone-800 rounded bg-[#121913]">Nenhuma missão na folha de cálculo. Crie uma acima!</div>`;
+        allContainer.innerHTML = `<div class="p-3 text-center text-stone-500 text-xs border border-stone-800 rounded bg-[#121913]">Nenhuma missão registada ainda. Crie uma acima!</div>`;
       } else {
         state.missions.forEach(m => {
           let recBadge = m.recurrence === "daily" ? "[🔄 Diária]" : m.recurrence === "weekly" ? "[📅 Semanal]" : "";
@@ -612,6 +609,7 @@
                 <span>Status: <b class="text-stone-300">${m.status}</b></span>
                 <span>Data: ${m.dueDate \vert{}\vert{} 'Hoje'} às ${m.deadline}</span>
               </div>
+              ${m.punishment ? `<div class="text-[11px] text-red-400">Castigo: ${m.punishment}</div>` : ''}
             </div>
           `;
         });
@@ -672,7 +670,8 @@
       const container = document.getElementById("calendar-day-missions");
       container.innerHTML = "";
 
-      document.getElementById("calendar-selected-label").textContent = `MISSÕES DE ${selectedCalendarDay}`;
+      const parts = selectedCalendarDay.split('-');
+      document.getElementById("calendar-selected-label").textContent = `MISSÕES DE ${parts[2]}/${parts[1]}/${parts[0]}`;
 
       let relMissions = state.missions;
       if (state.currentUser && state.currentUser.role === "recruit") {
@@ -695,7 +694,7 @@
               <div class="font-bold text-stone-200 text-sm">${m.title} <span class="text-[10px] text-blue-400 font-normal">(${recBadge})</span></div>
               <div class="text-[11px] text-stone-400">${m.soldierName} | Horário: <b>${m.deadline}</b></div>
             </div>
-            <span class="text-xs font-bold ${m.status === 'CUMPRIDA' ? 'text-green-400' : 'text-amber-400'}">${m.status}</span>
+            <span class="text-xs font-bold ${m.status === 'CUMPRIDA' ? 'text-green-400' : m.status === 'CORTE_MARCIAL' ? 'text-red-400' : 'text-amber-400'}">${m.status}</span>
           </div>
         `;
       });
@@ -705,7 +704,7 @@
       const container = document.getElementById("ranking-list");
       container.innerHTML = "";
       if (state.recruits.length === 0) {
-        container.innerHTML = `<div class="p-4 text-center text-xs text-stone-500">Nenhum filho registado na folha de cálculo.</div>`;
+        container.innerHTML = `<div class="p-4 text-center text-xs text-stone-500">Nenhum filho registado.</div>`;
         return;
       }
 
@@ -735,10 +734,11 @@
       const m = state.missions.find(x => x.id === missionId);
       if (!m) return;
       m.status = "AGUARDANDO_APROVACAO";
-      showTacticalBanner("⭐ Check-in feito! A aguardar aprovação.", "success");
+      saveState();
+      playTacticalSound('fanfare');
+      showTacticalBanner("⭐ Missão Executada com Sucesso! Relatório enviado ao comando!", "success");
       renderRecruitDashboard();
       renderCalendar();
-      pushToSheets();
     }
 
     function approveMission(missionId) {
@@ -754,26 +754,47 @@
       if (m.recurrence === "daily") {
         m.dueDate = addDaysToDateString(m.dueDate || new Date().toISOString().split('T')[0], 1);
         m.status = "PENDENTE";
-        showTacticalBanner(`🎖️ Aprovada! Próxima agendada para amanhã (${m.dueDate}).`, "success");
+        showTacticalBanner(`🎖️ Missão aprovada! Próxima ocorrência agendada para amanhã (${m.dueDate}).`, "success");
       } else if (m.recurrence === "weekly") {
         m.dueDate = addDaysToDateString(m.dueDate || new Date().toISOString().split('T')[0], 7);
         m.status = "PENDENTE";
-        showTacticalBanner(`🎖️ Aprovada! Próxima agendada para a próxima semana (${m.dueDate}).`, "success");
+        showTacticalBanner(`🎖️ Missão aprovada! Próxima ocorrência agendada para semana que vem (${m.dueDate}).`, "success");
       } else {
         m.status = "CUMPRIDA";
         showTacticalBanner("🎖️ Missão concluída com honra!", "success");
       }
 
+      saveState();
+      playTacticalSound('fanfare');
       renderParentDashboard();
       renderCalendar();
-      pushToSheets();
+    }
+
+    function sendToCourtMartial(missionId) {
+      const m = state.missions.find(x => x.id === missionId);
+      if (!m) return;
+
+      const soldier = state.recruits.find(r => String(r.id) === String(m.soldierId));
+      const penalty = 20;
+      if (soldier) {
+        soldier.coins = Math.max(0, Number(soldier.coins) - penalty);
+      }
+
+      m.status = "CORTE_MARCIAL";
+      saveState();
+      playTacticalSound('siren');
+
+      alert(`🚨 ALERTA VERMELHO!\n\n"Você vai pagar muito caro por essa desobediência soldado! Você vai para a CORTE MARCIAL!"\n\nPenalidade: -${penalty} Moedas.\nCastigo: ${m.punishment || "Sem ecrãs!"}`);
+
+      renderParentDashboard();
+      renderCalendar();
     }
 
     function openModalCreateMission() {
       const sel = document.getElementById("new-mission-soldier");
       sel.innerHTML = "";
       if (state.recruits.length === 0) {
-        alert("Cadastre primeiro um filho antes de criar missões!");
+        alert("Aliste primeiro um filho antes de criar missões!");
         return;
       }
       state.recruits.forEach(r => {
@@ -817,11 +838,11 @@
         status: "PENDENTE"
       });
 
+      saveState();
       closeModal("modal-create-mission");
       renderParentDashboard();
       renderCalendar();
-      pushToSheets();
-      showTacticalBanner("📋 Missão gravada na folha de cálculo!", "info");
+      showTacticalBanner("📋 Nova ordem emitida para o soldado!", "info");
     }
 
     function openModalNewSoldier() {
@@ -848,13 +869,13 @@
         theme
       });
 
+      saveState();
       document.getElementById("new-recruit-name").value = "";
-      document.getElementById("new-recruit-pin").value = "";
+      document.getElementById("new-recruit-pin").value = "1234";
       closeModal("modal-new-soldier");
       renderLoginProfiles();
       renderRanking();
-      pushToSheets();
-      alert(`Filho ${name} gravado com sucesso!`);
+      alert(`Soldado ${name} alistado com sucesso!`);
     }
 
     function closeModal(id) {
@@ -868,8 +889,40 @@
       setTimeout(() => b.classList.add("hidden"), 3000);
     }
 
+    // --- BACKUP E RESTAURAÇÃO ---
+    function exportData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `pelotao_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (imported.recruits && imported.missions) {
+            state = imported;
+            saveState();
+            renderLoginProfiles();
+            renderParentDashboard();
+            renderRanking();
+            renderCalendar();
+            alert("Dados restaurados com sucesso!");
+          }
+        } catch (err) {
+          alert("Ficheiro inválido!");
+        }
+      };
+      reader.readAsText(file);
+    }
+
     window.addEventListener("DOMContentLoaded", () => {
-      pullFromSheets(false);
+      renderLoginProfiles();
     });
   </script>
 </body>
