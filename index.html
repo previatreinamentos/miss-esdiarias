@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pelotão Tático Familiar</title>
+  <meta name="theme-color" content="#121811">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background-color: #0b0f0c;
+      color: #e5ede3;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .military-font { font-family: 'Black Ops One', cursive; letter-spacing: 1px; }
+    .camo-border { border: 2px solid #2e4a2c; }
+    .glow-green { box-shadow: 0 0 15px rgba(74, 222, 128, 0.25); }
+    .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+    .badge-espartano { background: linear-gradient(135deg, #7f1d1d, #991b1b); border: 1px solid #ef4444; }
+    .badge-disney { background: linear-gradient(135deg, #581c87, #86198f); border: 1px solid #d946ef; }
+    .badge-default { background: linear-gradient(135deg, #14532d, #166534); border: 1px solid #22c55e; }
+  </style>
+</head>
+<body class="flex justify-center min-h-screen">
+  <div id="app-container" class="w-full max-w-md min-h-screen flex flex-col bg-[#111712] relative pb-20 shadow-2xl">
+
+    <!-- TOPO MILITAR -->
+    <header class="p-4 bg-[#18221a] border-b border-[#2e4a2c] flex justify-between items-center sticky top-0 z-40">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-shield-halved text-green-500 text-xl"></i>
+        <div>
+          <h1 class="military-font text-lg text-green-400 tracking-wider">PELOTÃO TÁTICO</h1>
+          <p id="user-role-badge" class="text-xs uppercase text-amber-400 font-bold">DESCONECTADO</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button id="btn-sync" onclick="pullFromSheets(true)" title="Atualizar dados da Folha de Cálculo" class="text-stone-400 hover:text-green-400 transition">
+          <i id="sync-icon" class="fa-solid fa-rotate text-lg"></i>
+        </button>
+        <button id="btn-logout" onclick="logout()" class="hidden text-stone-400 hover:text-red-400">
+          <i class="fa-solid fa-power-off text-lg"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- NOTIFICAÇÃO -->
+    <div id="tactical-banner" class="hidden px-4 py-2 text-xs font-bold text-center tracking-wide transition-all"></div>
+
+    <!-- TELA 1: LOGIN -->
+    <section id="view-login" class="p-6 flex-1 flex flex-col justify-center space-y-6">
+      <div class="text-center space-y-2">
+        <div class="w-20 h-20 mx-auto rounded-full bg-green-950/60 border-2 border-green-500/50 flex items-center justify-center glow-green">
+          <i class="fa-solid fa-person-rifle text-3xl text-green-400"></i>
+        </div>
+        <h2 class="military-font text-2xl text-stone-100">IDENTIFIQUE-SE</h2>
+        <p id="status-planilha" class="text-xs text-stone-400">Quartel-General Familiar</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs uppercase text-green-500 font-bold mb-1">Selecione o Perfil</label>
+          <select id="login-profile" class="w-full bg-[#1c271e] border border-[#2e4a2c] text-stone-200 rounded p-3 font-semibold focus:outline-none focus:border-green-500">
+            <option value="parent">⭐ COMANDANTE GERAL (PAIS)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs uppercase text-green-500 font-bold mb-1">Código Tático (PIN)</label>
+          <input type="password" id="login-pin" maxlength="6" inputmode="numeric" placeholder="Digite o PIN (Padrão Pai: 1234)" class="w-full bg-[#1c271e] border border-[#2e4a2c] text-stone-200 rounded p-3 text-center tracking-widest text-lg focus:outline-none focus:border-green-500">
+        </div>
+
+        <button onclick="handleLogin()" class="w-full bg-green-600 hover:bg-green-500 text-stone-950 font-bold py-3.5 rounded uppercase tracking-wider text-base glow-green transition active:scale-95">
+          Autorizar Entrada
+        </button>
+      </div>
+    </section>
+
+    <!-- TELA 2: VISÃO DO RECRUTA -->
+    <section id="view-recruit" class="hidden p-4 flex-1 space-y-4">
+      <div class="p-4 rounded bg-[#172319] camo-border relative overflow-hidden">
+        <div class="flex items-center space-x-4">
+          <div id="soldier-badge" class="w-14 h-14 rounded-full flex items-center justify-center text-2xl border">🎖️</div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span id="soldier-name" class="font-bold text-lg text-white">Soldado</span>
+              <span id="soldier-rank-pill" class="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-stone-800 text-stone-300">Patente</span>
+            </div>
+            <div class="flex items-center space-x-4 mt-1 text-sm">
+              <span class="text-amber-400 font-bold"><i class="fa-solid fa-coins mr-1"></i><span id="soldier-coins">0</span> Moedas</span>
+              <span class="text-cyan-400 font-bold"><i class="fa-solid fa-bolt mr-1"></i><span id="soldier-xp">0</span> XP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="military-font text-stone-300 text-sm tracking-wide mb-2 flex items-center justify-between">
+          <span>SUAS MISSÕES</span>
+          <span id="recruit-mission-count" class="text-xs text-green-500 font-sans font-bold">0</span>
+        </h3>
+        <div id="recruit-missions-list" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- TELA 3: PAINEL DO COMANDANTE -->
+    <section id="view-parent" class="hidden p-4 flex-1 space-y-5">
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="openModalCreateMission()" class="bg-[#1b2b1e] border border-green-600/50 hover:border-green-400 p-3 rounded text-left flex items-center space-x-3 transition">
+          <i class="fa-solid fa-file-circle-plus text-green-400 text-xl"></i>
+          <div>
+            <div class="text-xs text-stone-400 font-bold">NOVA ORDEM</div>
+            <div class="text-sm font-bold text-white">Criar Missão</div>
+          </div>
+        </button>
+        <button onclick="openModalNewSoldier()" class="bg-[#1b2b1e] border border-stone-700 hover:border-stone-500 p-3 rounded text-left flex items-center space-x-3 transition">
+          <i class="fa-solid fa-user-plus text-amber-400 text-xl"></i>
+          <div>
+            <div class="text-xs text-stone-400 font-bold">ALISTAMENTO</div>
+            <div class="text-sm font-bold text-white">Cadastrar Filho</div>
+          </div>
+        </button>
+      </div>
+
+      <div>
+        <h3 class="military-font text-amber-400 text-sm tracking-wide mb-2 flex items-center space-x-2">
+          <i class="fa-solid fa-bell"></i>
+          <span>CHECK-INS PARA APROVAR</span>
+        </h3>
+        <div id="parent-approvals-list" class="space-y-2"></div>
+      </div>
+
+      <div>
+        <h3 class="military-font text-stone-300 text-sm tracking-wide mb-2">TODAS AS MISSÕES</h3>
+        <div id="parent-missions-list" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- TELA 4: CALENDÁRIO -->
+    <section id="view-calendar" class="hidden p-4 flex-1 space-y-4">
+      <div class="p-3 bg-[#152017] border border-[#2e4a2c] rounded-lg">
+        <div class="flex justify-between items-center mb-3">
+          <button onclick="changeMonth(-1)" class="p-1 px-3 bg-[#1c291f] text-stone-300 rounded font-bold hover:text-white">&lt;</button>
+          <h2 id="calendar-month-year" class="military-font text-green-400 text-base">MÊS / ANO</h2>
+          <button onclick="changeMonth(1)" class="p-1 px-3 bg-[#1c291f] text-stone-300 rounded font-bold hover:text-white">&gt;</button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-stone-400 mb-1">
+          <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+        </div>
+        <div id="calendar-days-grid" class="grid grid-cols-7 gap-1"></div>
+      </div>
+
+      <div>
+        <h3 class="military-font text-stone-300 text-sm tracking-wide mb-2 flex items-center justify-between">
+          <span id="calendar-selected-label">MISSÕES DO DIA</span>
+          <span id="calendar-selected-count" class="text-xs text-green-400 font-sans font-bold">0</span>
+        </h3>
+        <div id="calendar-day-missions" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- TELA 5: RANKING -->
+    <section id="view-ranking" class="hidden p-4 flex-1 space-y-4">
+      <div class="text-center py-2">
+        <h2 class="military-font text-2xl text-green-400">PLACAR DO PELOTÃO</h2>
+        <p class="text-xs text-stone-400">Classificação Atual</p>
+      </div>
+      <div id="ranking-list" class="space-y-2"></div>
+    </section>
+
+    <!-- MENU INFERIOR -->
+    <nav id="bottom-nav" class="hidden fixed bottom-0 max-w-md w-full bg-[#141d16] border-t border-[#2e4a2c] flex justify-around py-2 z-40">
+      <button onclick="switchTab('missions')" id="nav-missions" class="flex flex-col items-center text-green-400 transition">
+        <i class="fa-solid fa-list-check text-lg"></i>
+        <span class="text-[10px] font-bold mt-1 uppercase">Missões</span>
+      </button>
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center text-stone-400 hover:text-green-400 transition">
+        <i class="fa-solid fa-calendar-days text-lg"></i>
+        <span class="text-[10px] font-bold mt-1 uppercase">Calendário</span>
+      </button>
+      <button onclick="switchTab('ranking')" id="nav-ranking" class="flex flex-col items-center text-stone-400 hover:text-green-400 transition">
+        <i class="fa-solid fa-trophy text-lg"></i>
+        <span class="text-[10px] font-bold mt-1 uppercase">Ranking</span>
+      </button>
+    </nav>
+
+    <!-- MODAL: CRIAR MISSÃO -->
+    <div id="modal-create-mission" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+      <div class="bg-[#172319] border border-green-500/50 rounded-lg max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+          <h3 class="military-font text-green-400 text-lg">NOVA MISSÃO</h3>
+          <button onclick="closeModal('modal-create-mission')" class="text-stone-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs uppercase text-green-400 font-bold mb-1">Soldado Responsável</label>
+            <select id="new-mission-soldier" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded font-semibold"></select>
+          </div>
+
+          <div>
+            <label class="block text-xs uppercase text-green-400 font-bold mb-1">Título da Missão</label>
+            <input type="text" id="new-mission-title" placeholder="Ex: Arrumar a Cama" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded">
+          </div>
+
+          <div>
+            <label class="block text-xs uppercase text-green-400 font-bold mb-1">Frequência (Recorrência)</label>
+            <select id="new-mission-recurrence" class="w-full bg-[#111712] border border-[#2e4a2c] text-green-300 font-bold p-2.5 rounded text-sm">
+              <option value="none">🎯 Missão Única</option>
+              <option value="daily">🔄 Diária (Todo dia)</option>
+              <option value="weekly">📅 Semanal (1x na semana)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs uppercase text-green-400 font-bold mb-1">Detalhes</label>
+            <textarea id="new-mission-desc" rows="2" placeholder="Ex: Dobrar lençóis e alinhar almofadas." class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded text-sm"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs uppercase text-green-400 font-bold mb-1">Data</label>
+              <input type="date" id="new-mission-date" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded font-bold text-xs">
+            </div>
+            <div>
+              <label class="block text-xs uppercase text-green-400 font-bold mb-1">Horário Limite</label>
+              <input type="time" id="new-mission-time" value="12:00" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded font-bold text-xs">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs uppercase text-green-400 font-bold mb-1">Moedas (+)</label>
+              <input type="number" id="new-mission-coins" value="15" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded font-bold">
+            </div>
+            <div>
+              <label class="block text-xs uppercase text-green-400 font-bold mb-1">XP (+)</label>
+              <input type="number" id="new-mission-xp" value="30" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded font-bold">
+            </div>
+          </div>
+
+          <div class="p-3 bg-red-950/40 border border-red-800/60 rounded">
+            <label class="block text-xs uppercase text-red-400 font-bold mb-1">⚠️ Castigo se falhar</label>
+            <input type="text" id="new-mission-punishment" placeholder="Ex: Sem telemóvel hoje" class="w-full bg-[#111712] border border-red-900/60 text-stone-200 p-2 text-sm rounded">
+          </div>
+        </div>
+
+        <div class="flex space-x-2 pt-2">
+          <button onclick="closeModal('modal-create-mission')" class="w-1/2 py-2.5 border border-stone-700 text-stone-300 rounded font-bold uppercase text-xs">Cancelar</button>
+          <button onclick="saveMission()" class="w-1/2 py-2.5 bg-green-600 hover:bg-green-500 text-stone-950 rounded font-bold uppercase text-xs">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CADASTRAR FILHO -->
+    <div id="modal-new-soldier" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+      <div class="bg-[#172319] border border-green-600/50 rounded-lg max-w-md w-full p-5 space-y-4">
+        <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+          <h3 class="military-font text-white text-lg">CADASTRAR NOVO FILHO</h3>
+          <button onclick="closeModal('modal-new-soldier')" class="text-stone-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs uppercase text-stone-400 font-bold mb-1">Nome do Filho</label>
+            <input type="text" id="new-recruit-name" placeholder="Ex: Gabriel" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded">
+          </div>
+          <div>
+            <label class="block text-xs uppercase text-stone-400 font-bold mb-1">PIN de Acesso</label>
+            <input type="password" id="new-recruit-pin" maxlength="6" placeholder="1234" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded text-center tracking-widest">
+          </div>
+          <div>
+            <label class="block text-xs uppercase text-stone-400 font-bold mb-1">Tema</label>
+            <select id="new-recruit-theme" class="w-full bg-[#111712] border border-[#2e4a2c] text-white p-2.5 rounded">
+              <option value="espartano">Espartano ⚔️</option>
+              <option value="disney">Princesa Disney 👑</option>
+              <option value="padrao">Comando 🎖️</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex space-x-2 pt-2">
+          <button onclick="closeModal('modal-new-soldier')" class="w-1/2 py-2.5 border border-stone-700 text-stone-300 rounded font-bold uppercase text-xs">Cancelar</button>
+          <button onclick="addRecruit()" class="w-1/2 py-2.5 bg-green-600 text-stone-950 font-bold uppercase text-xs rounded">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ==========================================
+    // LINK CONFIGURADO COM SUCESSO:
+    // ==========================================
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-sX_irhzjaIn_5Ll3OASNjZwEzahAi951CDFsa_cqAvhLfNQs5te54XZjn4aePJRi7w/exec";
+
+    let state = {
+      currentUser: null,
+      recruits: [],
+      missions: []
+    };
+
+    let calendarDate = new Date();
+    let selectedCalendarDay = new Date().toISOString().split('T')[0];
+
+    function addDaysToDateString(dateStr, days) {
+      const parts = dateStr.split('-');
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split('T')[0];
+    }
+
+    function isMissionActiveOnDate(mission, targetDateStr) {
+      if (!mission.dueDate) return true;
+      if (mission.recurrence === "daily") {
+        return targetDateStr >= mission.dueDate;
+      }
+      if (mission.recurrence === "weekly") {
+        if (targetDateStr < mission.dueDate) return false;
+        const p1 = mission.dueDate.split('-');
+        const p2 = targetDateStr.split('-');
+        const d1 = new Date(p1[0], p1[1]-1, p1[2]);
+        const d2 = new Date(p2[0], p2[1]-1, p2[2]);
+        return d1.getDay() === d2.getDay();
+      }
+      return mission.dueDate === targetDateStr;
+    }
+
+    // --- LEITURA VIA JSONP ---
+    function pullFromSheets(showToast = false) {
+      const syncIcon = document.getElementById("sync-icon");
+      if (syncIcon) syncIcon.classList.add("fa-spin", "text-green-400");
+      document.getElementById("status-planilha").textContent = "A carregar dados da folha de cálculo...";
+
+      const callbackName = "handleSheetsResponse_" + Date.now();
+      window[callbackName] = function(data) {
+        if (syncIcon) syncIcon.classList.remove("fa-spin");
+        delete window[callbackName];
+        const oldScript = document.getElementById(callbackName);
+        if (oldScript) oldScript.remove();
+
+        if (data && data.status === "success") {
+          state.recruits = data.recruits || [];
+          state.missions = data.missions || [];
+
+          document.getElementById("user-role-badge").textContent = "FOLHA SINCRONIZADA";
+          document.getElementById("user-role-badge").className = "text-xs uppercase text-green-400 font-bold";
+          document.getElementById("status-planilha").textContent = `${state.recruits.length} recruta(s) carregados da Folha`;
+
+          renderLoginProfiles();
+
+          if (state.currentUser) {
+            if (state.currentUser.role === "parent") renderParentDashboard();
+            else renderRecruitDashboard();
+            renderRanking();
+            renderCalendar();
+          }
+
+          if (showToast) showTacticalBanner("✅ Folha atualizada!", "success");
+        } else {
+          document.getElementById("status-planilha").textContent = "Erro ao ler a folha de cálculo.";
+        }
+      };
+
+      const script = document.createElement("script");
+      script.id = callbackName;
+      script.src = `${APPS_SCRIPT_URL}?callback=${callbackName}&t=${Date.now()}`;
+      script.onerror = function() {
+        if (syncIcon) syncIcon.classList.remove("fa-spin");
+        document.getElementById("status-planilha").textContent = "Erro de ligação ao Apps Script.";
+      };
+      document.body.appendChild(script);
+    }
+
+    // --- GRAVAÇÃO NA FOLHA DE CÁLCULO ---
+    async function pushToSheets() {
+      const syncIcon = document.getElementById("sync-icon");
+      if (syncIcon) syncIcon.classList.add("fa-spin", "text-green-400");
+
+      try {
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "SYNC_ALL",
+            payload: {
+              recruits: state.recruits,
+              missions: state.missions
+            }
+          })
+        });
+        showTacticalBanner("💾 Gravado na folha de cálculo com sucesso!", "success");
+      } catch (e) {
+        console.warn("Erro ao gravar:", e);
+      } finally {
+        if (syncIcon) syncIcon.classList.remove("fa-spin");
+      }
+    }
+
+    // --- AUTENTICAÇÃO ---
+    function renderLoginProfiles() {
+      const select = document.getElementById("login-profile");
+      const current = select.value;
+      select.innerHTML = '<option value="parent">⭐ COMANDANTE GERAL (PAIS)</option>';
+      state.recruits.forEach(r => {
+        select.innerHTML += `<option value="${r.id}">🪖 Soldado ${r.name} (${r.rank})</option>`;
+      });
+      select.value = current || "parent";
+    }
+
+    function handleLogin() {
+      const profile = document.getElementById("login-profile").value;
+      const pin = document.getElementById("login-pin").value.trim();
+
+      if (profile === "parent") {
+        if (pin === "1234" || pin === "") {
+          state.currentUser = { role: "parent", name: "Comandante Geral" };
+          startSession();
+        } else {
+          alert("SENHA DO PAI INCORRETA! (Padrão: 1234)");
+        }
+      } else {
+        const recruit = state.recruits.find(r => r.id === profile);
+        if (recruit && (pin === String(recruit.pin) || pin === "1234")) {
+          state.currentUser = { role: "recruit", ...recruit };
+          startSession();
+        } else {
+          alert("PIN DO FILHO INCORRETO!");
+        }
+      }
+      document.getElementById("login-pin").value = "";
+    }
+
+    function startSession() {
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("bottom-nav").classList.remove("hidden");
+      document.getElementById("btn-logout").classList.remove("hidden");
+
+      if (state.currentUser.role === "parent") {
+        document.getElementById("user-role-badge").textContent = "QG DO COMANDANTE";
+        document.getElementById("view-parent").classList.remove("hidden");
+        document.getElementById("view-recruit").classList.add("hidden");
+        renderParentDashboard();
+      } else {
+        document.getElementById("user-role-badge").textContent = `SOLDADO ${state.currentUser.name.toUpperCase()}`;
+        document.getElementById("view-recruit").classList.remove("hidden");
+        document.getElementById("view-parent").classList.add("hidden");
+        renderRecruitDashboard();
+      }
+      renderRanking();
+      renderCalendar();
+    }
+
+    function logout() {
+      state.currentUser = null;
+      document.getElementById("view-login").classList.remove("hidden");
+      document.getElementById("view-recruit").classList.add("hidden");
+      document.getElementById("view-parent").classList.add("hidden");
+      document.getElementById("view-calendar").classList.add("hidden");
+      document.getElementById("view-ranking").classList.add("hidden");
+      document.getElementById("bottom-nav").classList.add("hidden");
+      document.getElementById("btn-logout").classList.add("hidden");
+      document.getElementById("user-role-badge").textContent = "DESCONECTADO";
+    }
+
+    function switchTab(tab) {
+      if (!state.currentUser) return;
+      document.getElementById("view-parent").classList.add("hidden");
+      document.getElementById("view-recruit").classList.add("hidden");
+      document.getElementById("view-calendar").classList.add("hidden");
+      document.getElementById("view-ranking").classList.add("hidden");
+
+      document.getElementById("nav-missions").className = "flex flex-col items-center text-stone-400 hover:text-green-400";
+      document.getElementById("nav-calendar").className = "flex flex-col items-center text-stone-400 hover:text-green-400";
+      document.getElementById("nav-ranking").className = "flex flex-col items-center text-stone-400 hover:text-green-400";
+
+      if (tab === "missions") {
+        document.getElementById("nav-missions").className = "flex flex-col items-center text-green-400";
+        if (state.currentUser.role === "parent") {
+          document.getElementById("view-parent").classList.remove("hidden");
+          renderParentDashboard();
+        } else {
+          document.getElementById("view-recruit").classList.remove("hidden");
+          renderRecruitDashboard();
+        }
+      } else if (tab === "calendar") {
+        document.getElementById("nav-calendar").className = "flex flex-col items-center text-green-400";
+        document.getElementById("view-calendar").classList.remove("hidden");
+        renderCalendar();
+      } else if (tab === "ranking") {
+        document.getElementById("nav-ranking").className = "flex flex-col items-center text-green-400";
+        document.getElementById("view-ranking").classList.remove("hidden");
+        renderRanking();
+      }
+    }
+
+    // --- PAINEL DO FILHO ---
+    function renderRecruitDashboard() {
+      const recruit = state.recruits.find(r => r.id === state.currentUser.id) || state.currentUser;
+      document.getElementById("soldier-name").textContent = recruit.name;
+      document.getElementById("soldier-rank-pill").textContent = recruit.rank;
+      document.getElementById("soldier-coins").textContent = recruit.coins;
+      document.getElementById("soldier-xp").textContent = recruit.xp;
+
+      const myMissions = state.missions.filter(m => String(m.soldierId) === String(recruit.id));
+      document.getElementById("recruit-mission-count").textContent = `${myMissions.length} ATRIBUÍDA(S)`;
+
+      const container = document.getElementById("recruit-missions-list");
+      container.innerHTML = "";
+
+      if (myMissions.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-stone-500 text-sm border border-stone-800 rounded bg-[#131a14]">Nenhuma missão atribuída a você na folha de cálculo.</div>`;
+        return;
+      }
+
+      myMissions.forEach(m => {
+        let actionBtn = "";
+        let statusBadge = "";
+
+        let recBadge = "";
+        if (m.recurrence === "daily") {
+          recBadge = `<span class="text-[9px] bg-blue-900/60 text-blue-300 border border-blue-600/40 px-1.5 py-0.5 rounded font-bold ml-1">🔄 DIÁRIA</span>`;
+        } else if (m.recurrence === "weekly") {
+          recBadge = `<span class="text-[9px] bg-purple-900/60 text-purple-300 border border-purple-600/40 px-1.5 py-0.5 rounded font-bold ml-1">📅 SEMANAL</span>`;
+        }
+
+        if (m.status === "PENDENTE") {
+          statusBadge = `<span class="text-[10px] bg-stone-800 text-stone-300 px-2 py-0.5 rounded font-bold">PENDENTE</span>`;
+          actionBtn = `
+            <button onclick="recruitCheckin('${m.id}')" class="w-full mt-3 py-2 bg-green-600 hover:bg-green-500 text-stone-950 font-bold uppercase text-xs rounded tracking-wider flex items-center justify-center space-x-1 glow-green transition">
+              <i class="fa-solid fa-square-check text-sm"></i>
+              <span>FAZER CHECK-IN</span>
+            </button>`;
+        } else if (m.status === "AGUARDANDO_APROVACAO") {
+          statusBadge = `<span class="text-[10px] bg-amber-900/60 border border-amber-600/40 text-amber-300 px-2 py-0.5 rounded font-bold">AGUARDANDO OS PAIS</span>`;
+          actionBtn = `<div class="mt-2 text-center text-xs text-amber-400 italic font-semibold">Check-in feito. A aguardar aprovação.</div>`;
+        } else if (m.status === "CUMPRIDA") {
+          statusBadge = `<span class="text-[10px] bg-green-900/60 border border-green-600/40 text-green-300 px-2 py-0.5 rounded font-bold">CUMPRIDA</span>`;
+          actionBtn = `<div class="mt-2 text-center text-xs text-green-400 font-bold">Missão concluída com sucesso!</div>`;
+        }
+
+        container.innerHTML += `
+          <div class="p-4 rounded bg-[#162118] border border-stone-800 space-y-2">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center flex-wrap">
+                <h4 class="font-bold text-base text-stone-100">${m.title}</h4>${recBadge}
+              </div>
+              ${statusBadge}
+            </div>
+            ${m.desc ? `<p class="text-xs text-stone-400">${m.desc}</p>` : ''}
+            <div class="flex items-center justify-between text-xs pt-1 border-t border-stone-800/80">
+              <span class="text-stone-400"><i class="fa-regular fa-calendar mr-1"></i>Data: <b class="text-stone-200">${m.dueDate \vert{}\vert{} 'Hoje'} às ${m.deadline}</b></span>
+              <div class="space-x-2">
+                <span class="text-amber-400 font-bold">+${m.coins} Moedas</span>
+                <span class="text-cyan-400 font-bold">+${m.xp} XP</span>
+              </div>
+            </div>
+            ${actionBtn}
+          </div>
+        `;
+      });
+    }
+
+    // --- PAINEL DO COMANDANTE ---
+    function renderParentDashboard() {
+      const pendingList = state.missions.filter(m => m.status === "AGUARDANDO_APROVACAO");
+      const appContainer = document.getElementById("parent-approvals-list");
+      appContainer.innerHTML = "";
+
+      if (pendingList.length === 0) {
+        appContainer.innerHTML = `<div class="p-3 text-center text-stone-500 text-xs border border-stone-800 rounded bg-[#121913]">Nenhum check-in pendente.</div>`;
+      } else {
+        pendingList.forEach(m => {
+          appContainer.innerHTML += `
+            <div class="p-3 rounded bg-[#1a291d] border border-amber-500/40 space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-sm text-amber-300">${m.title}</span>
+                <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded font-bold">${m.soldierName}</span>
+              </div>
+              <p class="text-xs text-stone-300">O filho fez check-in nesta missão.</p>
+              <div class="flex space-x-2 pt-1">
+                <button onclick="approveMission('${m.id}')" class="flex-1 py-1.5 bg-green-600 hover:bg-green-500 text-stone-950 font-bold text-xs uppercase rounded">
+                  Aprovar (+${m.coins} Moedas)
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      const allContainer = document.getElementById("parent-missions-list");
+      allContainer.innerHTML = "";
+      if (state.missions.length === 0) {
+        allContainer.innerHTML = `<div class="p-3 text-center text-stone-500 text-xs border border-stone-800 rounded bg-[#121913]">Nenhuma missão na folha de cálculo. Crie uma acima!</div>`;
+      } else {
+        state.missions.forEach(m => {
+          let recBadge = m.recurrence === "daily" ? "[🔄 Diária]" : m.recurrence === "weekly" ? "[📅 Semanal]" : "";
+          allContainer.innerHTML += `
+            <div class="p-3 rounded bg-[#141d16] border border-stone-800 space-y-1 text-sm">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-stone-200">${m.title} <span class="text-xs text-blue-400">${recBadge}</span></span>
+                <span class="text-xs text-stone-400 font-semibold">[${m.soldierName}]</span>
+              </div>
+              <div class="flex justify-between items-center text-xs text-stone-400">
+                <span>Status: <b class="text-stone-300">${m.status}</b></span>
+                <span>Data: ${m.dueDate \vert{}\vert{} 'Hoje'} às ${m.deadline}</span>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    // --- CALENDÁRIO ---
+    function changeMonth(delta) {
+      calendarDate.setMonth(calendarDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth();
+      const monthNames = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+
+      document.getElementById("calendar-month-year").textContent = `${monthNames[month]}${year}`;
+
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const grid = document.getElementById("calendar-days-grid");
+      grid.innerHTML = "";
+
+      for (let i = 0; i < firstDayIndex; i++) {
+        grid.innerHTML += `<div class="h-10"></div>`;
+      }
+
+      for (let day = 1; day <= totalDays; day++) {
+        const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        let relMissions = state.missions;
+        if (state.currentUser && state.currentUser.role === "recruit") {
+          relMissions = state.missions.filter(m => String(m.soldierId) === String(state.currentUser.id));
+        }
+
+        const count = relMissions.filter(m => isMissionActiveOnDate(m, dStr)).length;
+        const isSelected = selectedCalendarDay === dStr;
+        let dot = count > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-green-400 mx-auto mt-0.5 block"></span>` : ``;
+
+        grid.innerHTML += `
+          <button onclick="selectCalendarDate('${dStr}')" class="h-10 rounded flex flex-col items-center justify-center text-xs font-bold transition ${isSelected ? 'bg-green-600 text-stone-950 font-black' : 'bg-[#18231a] hover:bg-[#203023] text-stone-200'}">
+            <span>${day}</span>
+            ${dot}
+          </button>
+        `;
+      }
+
+      renderCalendarDayMissions();
+    }
+
+    function selectCalendarDate(dStr) {
+      selectedCalendarDay = dStr;
+      renderCalendar();
+    }
+
+    function renderCalendarDayMissions() {
+      const container = document.getElementById("calendar-day-missions");
+      container.innerHTML = "";
+
+      document.getElementById("calendar-selected-label").textContent = `MISSÕES DE ${selectedCalendarDay}`;
+
+      let relMissions = state.missions;
+      if (state.currentUser && state.currentUser.role === "recruit") {
+        relMissions = state.missions.filter(m => String(m.soldierId) === String(state.currentUser.id));
+      }
+
+      const dayMissions = relMissions.filter(m => isMissionActiveOnDate(m, selectedCalendarDay));
+      document.getElementById("calendar-selected-count").textContent = `${dayMissions.length} MISSÃO(ÕES)`;
+
+      if (dayMissions.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-stone-500 border border-stone-800 rounded bg-[#131b14]">Nenhuma missão ativa nesta data.</div>`;
+        return;
+      }
+
+      dayMissions.forEach(m => {
+        let recBadge = m.recurrence === "daily" ? "🔄 Diária" : m.recurrence === "weekly" ? "📅 Semanal" : "🎯 Única";
+        container.innerHTML += `
+          <div class="p-3 bg-[#162118] border border-stone-800 rounded flex items-center justify-between">
+            <div>
+              <div class="font-bold text-stone-200 text-sm">${m.title} <span class="text-[10px] text-blue-400 font-normal">(${recBadge})</span></div>
+              <div class="text-[11px] text-stone-400">${m.soldierName} | Horário: <b>${m.deadline}</b></div>
+            </div>
+            <span class="text-xs font-bold ${m.status === 'CUMPRIDA' ? 'text-green-400' : 'text-amber-400'}">${m.status}</span>
+          </div>
+        `;
+      });
+    }
+
+    function renderRanking() {
+      const container = document.getElementById("ranking-list");
+      container.innerHTML = "";
+      if (state.recruits.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-stone-500">Nenhum filho registado na folha de cálculo.</div>`;
+        return;
+      }
+
+      const sorted = [...state.recruits].sort((a, b) => (Number(b.xp) + Number(b.coins)) - (Number(a.xp) + Number(a.coins)));
+      sorted.forEach((r, idx) => {
+        const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉";
+        container.innerHTML += `
+          <div class="p-3 rounded bg-[#162118] border border-stone-800 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="text-xl">${medal}</span>
+              <div>
+                <div class="font-bold text-stone-100">${r.name}</div>
+                <div class="text-xs text-stone-400">${r.rank}</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-amber-400 font-bold text-sm">${r.coins} Moedas</div>
+              <div class="text-cyan-400 text-xs font-semibold">${r.xp} XP</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // --- AÇÕES DO SISTEMA ---
+    function recruitCheckin(missionId) {
+      const m = state.missions.find(x => x.id === missionId);
+      if (!m) return;
+      m.status = "AGUARDANDO_APROVACAO";
+      showTacticalBanner("⭐ Check-in feito! A aguardar aprovação.", "success");
+      renderRecruitDashboard();
+      renderCalendar();
+      pushToSheets();
+    }
+
+    function approveMission(missionId) {
+      const m = state.missions.find(x => x.id === missionId);
+      if (!m) return;
+
+      const soldier = state.recruits.find(r => String(r.id) === String(m.soldierId));
+      if (soldier) {
+        soldier.coins = Number(soldier.coins) + Number(m.coins);
+        soldier.xp = Number(soldier.xp) + Number(m.xp);
+      }
+
+      if (m.recurrence === "daily") {
+        m.dueDate = addDaysToDateString(m.dueDate || new Date().toISOString().split('T')[0], 1);
+        m.status = "PENDENTE";
+        showTacticalBanner(`🎖️ Aprovada! Próxima agendada para amanhã (${m.dueDate}).`, "success");
+      } else if (m.recurrence === "weekly") {
+        m.dueDate = addDaysToDateString(m.dueDate || new Date().toISOString().split('T')[0], 7);
+        m.status = "PENDENTE";
+        showTacticalBanner(`🎖️ Aprovada! Próxima agendada para a próxima semana (${m.dueDate}).`, "success");
+      } else {
+        m.status = "CUMPRIDA";
+        showTacticalBanner("🎖️ Missão concluída com honra!", "success");
+      }
+
+      renderParentDashboard();
+      renderCalendar();
+      pushToSheets();
+    }
+
+    function openModalCreateMission() {
+      const sel = document.getElementById("new-mission-soldier");
+      sel.innerHTML = "";
+      if (state.recruits.length === 0) {
+        alert("Cadastre primeiro um filho antes de criar missões!");
+        return;
+      }
+      state.recruits.forEach(r => {
+        sel.innerHTML += `<option value="${r.id}">${r.name} (${r.rank})</option>`;
+      });
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      document.getElementById("new-mission-date").value = selectedCalendarDay || todayStr;
+      document.getElementById("modal-create-mission").classList.remove("hidden");
+    }
+
+    function saveMission() {
+      const soldierId = document.getElementById("new-mission-soldier").value;
+      const soldier = state.recruits.find(r => String(r.id) === String(soldierId));
+      const title = document.getElementById("new-mission-title").value.trim();
+      const recurrence = document.getElementById("new-mission-recurrence").value;
+      const desc = document.getElementById("new-mission-desc").value.trim();
+      const coins = parseInt(document.getElementById("new-mission-coins").value) || 10;
+      const xp = parseInt(document.getElementById("new-mission-xp").value) || 20;
+      const dueDate = document.getElementById("new-mission-date").value;
+      const deadline = document.getElementById("new-mission-time").value;
+      const punishment = document.getElementById("new-mission-punishment").value.trim();
+
+      if (!title) {
+        alert("Preencha o título da missão!");
+        return;
+      }
+
+      state.missions.unshift({
+        id: "m_" + Date.now(),
+        title,
+        desc,
+        soldierId,
+        soldierName: soldier ? soldier.name : "Soldado",
+        coins,
+        xp,
+        dueDate,
+        deadline,
+        punishment,
+        recurrence,
+        status: "PENDENTE"
+      });
+
+      closeModal("modal-create-mission");
+      renderParentDashboard();
+      renderCalendar();
+      pushToSheets();
+      showTacticalBanner("📋 Missão gravada na folha de cálculo!", "info");
+    }
+
+    function openModalNewSoldier() {
+      document.getElementById("modal-new-soldier").classList.remove("hidden");
+    }
+
+    function addRecruit() {
+      const name = document.getElementById("new-recruit-name").value.trim();
+      const pin = document.getElementById("new-recruit-pin").value.trim() || "1234";
+      const theme = document.getElementById("new-recruit-theme").value;
+      if (!name) return;
+
+      let rank = "Guerreiro Espartano ⚔️";
+      if (theme === "disney") rank = "Princesa Disney 👑";
+      if (theme === "padrao") rank = "Cabo Tático 🎖️";
+
+      state.recruits.push({
+        id: String(Date.now()),
+        name,
+        pin,
+        coins: 0,
+        xp: 0,
+        rank,
+        theme
+      });
+
+      document.getElementById("new-recruit-name").value = "";
+      document.getElementById("new-recruit-pin").value = "";
+      closeModal("modal-new-soldier");
+      renderLoginProfiles();
+      renderRanking();
+      pushToSheets();
+      alert(`Filho ${name} gravado com sucesso!`);
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+
+    function showTacticalBanner(msg, type) {
+      const b = document.getElementById("tactical-banner");
+      b.textContent = msg;
+      b.classList.remove("hidden", "bg-green-950", "text-green-300");
+      setTimeout(() => b.classList.add("hidden"), 3000);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      pullFromSheets(false);
+    });
+  </script>
+</body>
+</html>
